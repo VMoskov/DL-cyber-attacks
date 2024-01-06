@@ -184,7 +184,7 @@ if __name__ == '__main__':
     #           f"new class: {cifar10_poisoned_image_class}")
     # plt.show()
     ################################
-    # uncomment to save poisoned model (warning: cpu/ram intensive!)
+    # uncomment to save the poisoned dataset (warning: cpu/ram intensive!)
     ################################
     # cifar10_badnets.save(os.path.join("..", "..", "datasets", "CIFAR10", "badnets"))
     ################################
