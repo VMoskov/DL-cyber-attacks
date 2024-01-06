@@ -74,6 +74,65 @@ class AddCIFAR10Trigger(AddTrigger):
         return Image.fromarray(output_image.permute(1, 2, 0).numpy())
 
 
+class AddMNISTTrigger(AddTrigger):
+    """
+    Class for adding a backdoor trigger to a MNIST image.
+
+    Attributes:
+        pattern: a backdoor trigger pattern, torch.Tensor of shape (C, H, W) -> (1, 28, 28)
+        alpha: transparency of the trigger pattern, float32 [0, 1]
+
+    Methods:
+        __init__: initialize the backdoor trigger pattern and transparency
+        __call__: add the backdoor trigger to the image
+    """
+
+    def __init__(self, pattern, alpha=1):
+        assert isinstance(pattern, Image.Image) or pattern is None, 'pattern should be a PIL image.'
+        self.alpha = alpha
+
+        if pattern is None:
+            pattern = torch.zeros((1, 28, 28), dtype=torch.uint8)
+            pattern[0, -3:, -3:] = 255  # default pattern, 3x3 white square at the right corner
+        else:
+            pattern = F.pil_to_tensor(pattern)
+            if pattern.dim() == 2:
+                pattern = pattern.unsqueeze(0)
+
+        super().__init__(pattern)
+
+    def __call__(self, img):
+        """
+        Add the backdoor trigger to the image.
+            Arguments:
+                img: PIL image
+            Returns:
+                PIL image
+        """
+        input_image = F.pil_to_tensor(img)
+        output_image = self.add_trigger(input_image)
+        return Image.fromarray(output_image.squeeze(0).numpy()).convert("L")
+
+
+class BlendImage:
+    def __init__(self, pattern, alpha=0.2):
+        assert isinstance(pattern, Image.Image) or pattern is None, 'pattern should be a PIL image.'
+        self.pattern = pattern
+        self.alpha = alpha
+
+    def __call__(self, img):
+        """
+        Blend the pattern with the image.
+            Arguments:
+                img: PIL image
+            Returns:
+                PIL image
+        """
+        pattern_resized = self.pattern.resize((img.width, img.height))
+        pattern_resized = pattern_resized.convert(img.mode)
+        return Image.blend(img, pattern_resized, self.alpha)
+
+
 class PoisonedCIFAR10(CIFAR10):
     def __init__(self,
                  benign_dataset: CIFAR10,
@@ -129,46 +188,6 @@ class PoisonedCIFAR10(CIFAR10):
             target = self.y_target
 
         return img, target
-
-
-class AddMNISTTrigger(AddTrigger):
-    """
-    Class for adding a backdoor trigger to a MNIST image.
-
-    Attributes:
-        pattern: a backdoor trigger pattern, torch.Tensor of shape (C, H, W) -> (1, 28, 28)
-        alpha: transparency of the trigger pattern, float32 [0, 1]
-
-    Methods:
-        __init__: initialize the backdoor trigger pattern and transparency
-        __call__: add the backdoor trigger to the image
-    """
-
-    def __init__(self, pattern, alpha=1):
-        assert isinstance(pattern, Image.Image) or pattern is None, 'pattern should be a PIL image.'
-        self.alpha = alpha
-
-        if pattern is None:
-            pattern = torch.zeros((1, 28, 28), dtype=torch.uint8)
-            pattern[0, -3:, -3:] = 255  # default pattern, 3x3 white square at the right corner
-        else:
-            pattern = F.pil_to_tensor(pattern)
-            if pattern.dim() == 2:
-                pattern = pattern.unsqueeze(0)
-
-        super().__init__(pattern)
-
-    def __call__(self, img):
-        """
-        Add the backdoor trigger to the image.
-            Arguments:
-                img: PIL image
-            Returns:
-                PIL image
-        """
-        input_image = F.pil_to_tensor(img)
-        output_image = self.add_trigger(input_image)
-        return Image.fromarray(output_image.squeeze(0).numpy()).convert("L")
 
 
 class PoisonedMNIST(MNIST):
