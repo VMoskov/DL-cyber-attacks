@@ -5,5 +5,5 @@ If you want to generate the trigger for Blended, you should run one of the the c
 <b>MNIST:</b><br/>
 28x28 image with 1 color channel<br/><br/>
 ```shell
-python ./generate_random_pattern.py --color_channels 3 --output_path ./random_pattern.png
+python ./generate_random_pattern.py --output_path ./random_pattern.png
 ```
